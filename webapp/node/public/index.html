@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Walabot Wheelchair</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      progress {
+        border: 0;
+         width: 20em;
+         height: 5em;
+         border-radius: 9px;
+      }
+
+      progress.yellow::-webkit-progress-value {
+        background-color: yellow;
+      }
+      progress.red::-webkit-progress-value {
+        background-color: red;
+      }
+
+    </style>
+  </head>
+  <body>
+    <button id="initButton">Connect</button>
+    <progress id="meter" class="yellow" max="100" value="0"></progress>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var ALERT = 60,
+          socket = io(),
+          meter = document.getElementById('meter'),
+          initButton = document.getElementById('initButton');
+
+          socket.on('targetData', function(target){
+            console.log(target);
+            target = JSON.parse(target);
+            meter.classList.remove('red', 'yellow');
+            meter.value = Math.floor(target.zPosCm);
+            if(target.zPosCm <= ALERT){
+              meter.classList.add('red');
+              playAlarm();
+            }else{
+              meter.classList.add('yellow');
+              stopAlarm();
+            }
+          });
+
+          socket.on('noTarget', function(){
+            console.log('no targets available');
+            meter.value = 0;
+            stopAlarm();
+          });
+
+          var context = new AudioContext();
+          var analyser = context.createAnalyser();
+          var source;
+          var audio0 = new Audio();
+
+          function initAudio(){
+            audio0.src = 'alarm.mp3';
+            audio0.controls = true;
+            audio0.loop = true;
+            audio0.volume = 0;
+            source = context.createMediaElementSource(audio0);
+            source.connect(analyser);
+            analyser.connect(context.destination);
+            document.querySelector('body').appendChild(audio0)
+            audio0.play();
+          }
+
+          function playAlarm(){
+            if(source){
+              audio0.volume = 1;
+            }
+          }
+
+          function stopAlarm(){
+            if(source){
+              audio0.volume = 0;
+            }
+          }
+
+          initButton.addEventListener('click', initAudio);
+
+    </script>
+  </body>
+</html>
