@@ -6,6 +6,11 @@ import sys
 import os
 import logging
 import WalabotAPI
+import json
+from socketIO_client import SocketIO, LoggingNamespace
+
+socketIO = SocketIO('localhost', 3000, LoggingNamespace)
+socketIO.wait(seconds=1)
 
 WARNING_DIST = 100
 ALERT_DIST = 60
@@ -53,16 +58,19 @@ class WalabotWheelchair():
                 self.stopLoop()
                 return
             targets = targets[:self.numOfTargetsToDisplay]
-            if len(targets) > 0:
-                logger.info(targets[0])
+            if len(targets) > 0 and targets[0].zPosCm < WARNING_DIST:
+                logger.debug(targets[0])
+                socketIO.emit('targetData', json.dumps(targets[0].__dict__))
             else:
-                logger.info("No active targets")
+                logger.debug("No active targets")
+                socketIO.emit('noTarget')
 
     def stopLoop(self):
         """ Kills the loop function and reset the relevant app components.
         """
         self.shouldLoop = False
         self.wlbt.stopAndDisconnect()
+        socketIO.disconnect()
 
 def getParameters():
     """ Return the values of all the parameters
@@ -72,7 +80,7 @@ def getParameters():
     alert = ALERT_DIST
     rMin = 1.0
     rMax = 150.0
-    rRes = 1.0
+    rRes = 5.0
     tMax = 45.0
     tRes = 10.0
     pMax = 45.0
