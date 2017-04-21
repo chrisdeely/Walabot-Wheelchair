@@ -4,7 +4,12 @@
     <title>Walabot Wheelchair</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
+      body {
+        font: 13px Helvetica, Arial;
+        display: flex;
+        flex-direction: column;
+      }
+
       progress {
         border: 0;
          width: 20em;
@@ -22,13 +27,15 @@
     </style>
   </head>
   <body>
-    <button id="initButton">Connect</button>
+    <input id="status" value="Connecting..."/>
+    <button id="initButton">Enable Sound</button>
     <progress id="meter" class="yellow" max="100" value="0"></progress>
     <script src="/socket.io/socket.io.js"></script>
     <script>
       var ALERT = 60,
           socket = io(),
           meter = document.getElementById('meter'),
+          statusMsg = document.getElementById('status'),
           initButton = document.getElementById('initButton');
 
           socket.on('targetData', function(target){
@@ -51,32 +58,39 @@
             stopAlarm();
           });
 
-          var context = new AudioContext();
-          var analyser = context.createAnalyser();
-          var source;
-          var audio0 = new Audio();
+          socket.on('status', function (status) {
+            statusMsg.value = status;
+          })
+
+
+          var audioPlayer;
 
           function initAudio(){
-            audio0.src = 'alarm.mp3';
-            audio0.controls = true;
-            audio0.loop = true;
-            audio0.volume = 0;
-            source = context.createMediaElementSource(audio0);
+            var context = new AudioContext();
+            var analyser = context.createAnalyser();
+            var source;
+
+            audioPlayer = new Audio();
+            audioPlayer.src = 'alarm.mp3';
+            audioPlayer.controls = true;
+            audioPlayer.loop = true;
+            audioPlayer.volume = 0;
+            source = context.createMediaElementSource(audioPlayer);
             source.connect(analyser);
             analyser.connect(context.destination);
-            document.querySelector('body').appendChild(audio0)
-            audio0.play();
+            document.querySelector('body').appendChild(audioPlayer)
+            audioPlayer.play();
           }
 
           function playAlarm(){
-            if(source){
-              audio0.volume = 1;
+            if(audioPlayer){
+              audioPlayer.volume = 1;
             }
           }
 
           function stopAlarm(){
-            if(source){
-              audio0.volume = 0;
+            if(audioPlayer){
+              audioPlayer.volume = 0;
             }
           }
 
