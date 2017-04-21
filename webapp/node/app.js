@@ -18,8 +18,11 @@ io.on('connection', function(socket){
   socket.on('noTarget', function(){
     socket.broadcast.emit('noTarget');
   });
+  socket.on('status', function(status){
+    socket.broadcast.emit('status', status);
+  });
   socket.on('disconnect', function(){
-    console.log('user disconnected');
+    socket.broadcast.emit('status', 'sensor disconnected');
   });
 });
 

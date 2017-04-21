@@ -13,7 +13,6 @@ socketIO = SocketIO('localhost', 3000, LoggingNamespace)
 socketIO.wait(seconds=1)
 
 WARNING_DIST = 100
-ALERT_DIST = 60
 
 logger = logging.getLogger('WW')
 
@@ -24,6 +23,7 @@ class WalabotWheelchair():
     def __init__(self):
         """ Init the Walabot API.
         """
+        socketIO.emit("status", "Walabot initializing")
         self.wlbt = Walabot()
 
     def initAppLoop(self):
@@ -31,16 +31,18 @@ class WalabotWheelchair():
             to the config, calibrate if needed and start calls
             the loop function.
         """
+        socketIO.emit("status", "scan loop initializing");
         if self.wlbt.isConnected():  # connection achieved
-            logger.debug("Status: " + self.wlbt.getStatusString())
+            socketIO.emit("status", self.wlbt.getStatusString())
             try:
                 self.wlbt.setParameters(*getParameters())
             except WalabotAPI.WalabotError as err:
+                socketIO.emit("status", str(err))
                 logger.error(str(err))
                 return
             self.numOfTargetsToDisplay = 1
             self.wlbt.calibrate()
-            logger.debug("Status: " + self.wlbt.getStatusString())
+            socketIO.emit("status", self.wlbt.getStatusString())
             self.shouldLoop = True
             self.loop()
         else:
@@ -52,11 +54,12 @@ class WalabotWheelchair():
         while self.shouldLoop:
             try:
                 targets = self.wlbt.getTargets()
-                logger.debug((int(self.wlbt.getFps())))
             except WalabotAPI.WalabotError as err:
+                socketIO.emit("status", str(err))
                 logger.error(str(err))
                 self.stopLoop()
                 return
+
             targets = targets[:self.numOfTargetsToDisplay]
             if len(targets) > 0 and targets[0].zPosCm < WARNING_DIST:
                 logger.debug(targets[0])
@@ -77,15 +80,14 @@ def getParameters():
     TODO: replace with config
     """
     warn = WARNING_DIST
-    alert = ALERT_DIST
-    rMin = 1.0
+    rMin = 15.0
     rMax = 150.0
     rRes = 5.0
     tMax = 45.0
     tRes = 10.0
     pMax = 45.0
     pRes = 10.0
-    thld = 15.0
+    thld = 25.0
     mtiParam = 0
     rParams = (rMin, rMax, rRes)
     tParams = (-tMax, tMax, tRes)
