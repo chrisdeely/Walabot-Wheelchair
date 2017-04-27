@@ -30,6 +30,9 @@ io.on('connection', function(socket){
 
 //run the Python code to detect Walabot signals
 var walabot = spawn('python', ['../../walabot/WalabotWheelchair.py']);
+walabot.stderr.on('data', function (msg) {
+  console.log(`Walabot error: ${msg}`)
+})
 walabot.on('exit', function (exitCode) {
   if(exitCode !==0){
     console.log('Walabot exited with error:', exitCode)
